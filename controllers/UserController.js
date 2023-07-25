@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 //helpers
 const createUserToken = require("../helpers/create-user-token");
 const getToken = require("../helpers/get-token");
+const getUserByToken = require("../helpers/get-user-by-token");
 
 module.exports = class UserController{
     static async register(req, res){
@@ -97,5 +98,55 @@ module.exports = class UserController{
         }
 
 
+    }
+
+    static async editUser(req, res) {
+
+        //check if user exists by token
+        const token = getToken(req);
+        const user = await getUserByToken(token);
+
+        const {name, email, phone, password, confirmpassword} = req.body;
+
+        if(req.file){
+            user.image = req.file.filename;
+        }
+
+        // Validations
+        if(!name)               { res.status(422).json({ message: "O nome é obrigatório" }); return; }
+        user.name = name;
+
+        if(!email)              { res.status(422).json({ message: "O email é obrigatório" }); return; }
+        const userExists = await User.findOne({email: email});
+        if(user.email !== email && userExists){
+            return res.status(422).json({ message: "Utilize outro e-mail!" });
+        }
+        user.email = email;
+        
+        if(!phone)              { res.status(422).json({ message: "O telefone é obrigatório" }); return; }
+        user.phone = phone;
+
+        if(confirmpassword != password) {
+            res.status(422).json({ message: "As senhas não conferem" });
+            return; 
+        } else if(password === confirmpassword && password != null){
+            //create a password
+            const salt = await bcrypt.genSalt(12)
+            const passwordHash = await bcrypt.hash(password, salt);
+            user.password = passwordHash;
+        }
+
+
+        try {
+            await User.findOneAndUpdate(
+                {_id: user._id},
+                {$set: user},
+                {new: true},
+            );
+
+            res.status(200).json({ message: "Usuário atualizado com sucesso!" });
+        } catch (error) {
+            return res.status(500).json({ message: "Usuário não encontrado!" });
+        }
     }
 }
