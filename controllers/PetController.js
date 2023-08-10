@@ -140,10 +140,7 @@ module.exports = class PetController {
         if(!weight) { res.status(422).json({ message: "O peso é obrigatório" }); return; } else {updatedData.weight = weight;}
         if(!color) { res.status(422).json({ message: "A cor é obrigatória" }); return; } else {updatedData.color = color;}
         if(available) { updatedData.available = available; }
-        if(images.length === 0) {
-            res.status(422).json({ message: "A imagem é obrigatória" });
-            return; 
-        } else {
+        if(images.length > 0) {
             updatedData.images = [];
             images.map((image) => {
                 updatedData.images.push(image.filename);
@@ -227,7 +224,6 @@ module.exports = class PetController {
         //get owner by token
         const token = getToken(req);
         const user = await getUserByToken(token);
-        console.log("TESTE", pet.user._id.equals(user._id));
         if(pet && pet.user._id.equals(user._id)){
             return true; 
         }
